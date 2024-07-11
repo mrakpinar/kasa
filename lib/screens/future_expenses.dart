@@ -1,18 +1,17 @@
 import 'dart:convert';
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class ExpenseScreen extends StatefulWidget {
-  const ExpenseScreen({Key? key}) : super(key: key);
+class FutureExpenses extends StatefulWidget {
+  const FutureExpenses({super.key});
 
   @override
-  State<ExpenseScreen> createState() => _ExpenseScreenState();
+  State<FutureExpenses> createState() => _FutureExpensesState();
 }
 
-class _ExpenseScreenState extends State<ExpenseScreen> {
+class _FutureExpensesState extends State<FutureExpenses> {
   final _formKey = GlobalKey<FormState>();
   String? _category;
   String? _title;
@@ -33,14 +32,14 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   Future<void> _getImage(ImageSource source) async {
     final XFile? pickedFile = await _picker.pickImage(source: source);
 
-    if (pickedFile != null) {
-      setState(() {
+    setState(() {
+      if (pickedFile != null) {
         _imageFile = File(pickedFile.path);
         _imageSelected = true;
-      });
-    } else {
-      print('No image selected.');
-    }
+      } else {
+        print('No image selected.');
+      }
+    });
   }
 
   Future<void> _saveExpense() async {
@@ -72,23 +71,26 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
       targetAmount -= _amount!;
       await prefs.setDouble('targetAmount', targetAmount);
 
-      // Show notification
+      // Send notification
       if (targetAmount <= 0) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('Your target amount is exceeded!'),
             backgroundColor: Colors.red,
           ),
         );
       } else if (targetAmount <= 50) {
+        // ignore: use_build_context_synchronously
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
+          const SnackBar(
             content: Text('You are close to reaching your target amount!'),
             backgroundColor: Colors.orange,
           ),
         );
       }
 
+      // ignore: use_build_context_synchronously
       Navigator.pop(context, newExpense);
     }
   }
@@ -97,7 +99,7 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Add Expense'),
+        title: const Text('Add Future Expense'),
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -217,11 +219,6 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
                 },
                 icon: const Icon(Icons.photo),
                 label: const Text('Add Photo'),
-                style: ElevatedButton.styleFrom(
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12.0),
-                  ),
-                ),
               ),
               if (_imageSelected && _imageFile != null)
                 Padding(

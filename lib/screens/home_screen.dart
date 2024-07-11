@@ -4,6 +4,9 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:kasa/components/expense_card.dart';
 import 'package:kasa/screens/expense_screen.dart';
+import 'package:kasa/screens/expenses_target.dart';
+import 'package:kasa/screens/future_expenses.dart';
+import 'package:kasa/screens/income_screen.dart';
 import 'package:kasa/screens/monthly_expenses_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
@@ -18,7 +21,11 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _expenses = [];
+  List<Map<String, dynamic>> _incomes = [];
   double _totalExpenses = 0.0;
+  double _totalIncome = 0.0;
+  double _balance = 0.0;
+  bool _showDetails = false;
 
   final Map<String, Color> categoryColors = {
     'Food': Colors.blue,
@@ -31,7 +38,12 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExpenses();
+    _loadExpenses().then((_) {
+      setState(() {
+        _expenses = _expenses.reversed.toList();
+      });
+    });
+    _loadIncomes();
   }
 
   Map<String, double> _calculateCategoryExpenses() {
@@ -50,6 +62,17 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _expenses = List<Map<String, dynamic>>.from(jsonDecode(expensesJson));
       _calculateTotalExpenses();
+      _calculateBalance();
+    });
+  }
+
+  Future<void> _loadIncomes() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String incomesJson = prefs.getString('incomes') ?? '[]';
+    setState(() {
+      _incomes = List<Map<String, dynamic>>.from(jsonDecode(incomesJson));
+      _calculateTotalIncome();
+      _calculateBalance();
     });
   }
 
@@ -58,10 +81,25 @@ class _HomeScreenState extends State<HomeScreen> {
         _expenses.fold(0.0, (sum, expense) => sum + (expense['amount'] as num));
   }
 
+  void _calculateTotalIncome() {
+    _totalIncome =
+        _incomes.fold(0.0, (sum, income) => sum + (income['amount'] as num));
+  }
+
+  void _calculateBalance() {
+    _balance = _totalIncome - _totalExpenses;
+  }
+
   Future<void> _saveExpenses() async {
     final SharedPreferences prefs = await SharedPreferences.getInstance();
-    final String jsonString = jsonEncode(_expenses);
+    final String jsonString = jsonEncode(_expenses.reversed.toList());
     await prefs.setString('expenses', jsonString);
+  }
+
+  Future<void> _saveIncomes() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String jsonString = jsonEncode(_incomes);
+    await prefs.setString('incomes', jsonString);
   }
 
   Future<void> _clearExpenses() async {
@@ -70,6 +108,7 @@ class _HomeScreenState extends State<HomeScreen> {
     setState(() {
       _expenses.clear();
       _totalExpenses = 0.0;
+      _calculateBalance();
     });
   }
 
@@ -119,30 +158,49 @@ class _HomeScreenState extends State<HomeScreen> {
     Map<String, double> categoryExpenses = _calculateCategoryExpenses();
     List<PieChartSectionData> sections = [];
 
-    categoryExpenses.forEach((category, amount) {
+    if (categoryExpenses.isEmpty) {
+      // Hiç harcama yoksa, tek bir gri bölüm göster
       sections.add(
         PieChartSectionData(
-          color: categoryColors[category] ?? Colors.grey,
-          value: amount,
-          title: '${(amount / _totalExpenses * 100).toStringAsFixed(1)}%',
+          color: Colors.grey[300],
+          value: 1,
+          title: 'No Data',
           radius: 50,
           titleStyle: const TextStyle(
             fontSize: 12,
             fontWeight: FontWeight.bold,
-            color: Colors.white,
+            color: Colors.black54,
           ),
         ),
       );
-    });
+    } else {
+      categoryExpenses.forEach((category, amount) {
+        sections.add(
+          PieChartSectionData(
+            color: categoryColors[category] ?? Colors.grey,
+            value: amount,
+            title: '${(amount / _totalExpenses * 100).toStringAsFixed(1)}%',
+            radius: 50,
+            titleStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.bold,
+              color: Colors.white,
+            ),
+          ),
+        );
+      });
+    }
 
     return Card(
       color: Colors.grey[100],
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: GestureDetector(
-          onTap: () {
-            _showCategoryExpensesModal(context, categoryExpenses);
-          },
+          onTap: categoryExpenses.isNotEmpty
+              ? () {
+                  _showCategoryExpensesModal(context, categoryExpenses);
+                }
+              : null,
           child: SizedBox(
             height: 200,
             child: PieChart(
@@ -153,6 +211,153 @@ class _HomeScreenState extends State<HomeScreen> {
               ),
             ),
           ),
+        ),
+      ),
+    );
+  }
+
+  void _showAddOptionsModal(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      builder: (BuildContext context) {
+        return SafeArea(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: <Widget>[
+              ListTile(
+                leading: const Icon(Icons.money_off),
+                title: const Text('Add Expense'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ExpenseScreen(),
+                    ),
+                  ).then((result) {
+                    if (result != null) {
+                      setState(() {
+                        _expenses.insert(0, result);
+                        _calculateTotalExpenses();
+                        _calculateBalance();
+                      });
+                      _saveExpenses();
+                    }
+                  });
+                },
+              ),
+              ListTile(
+                leading: const Icon(Icons.attach_money),
+                title: const Text('Add Income'),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const IncomeScreen(),
+                    ),
+                  ).then((result) {
+                    if (result != null) {
+                      setState(() {
+                        _incomes.add(result);
+                        _calculateTotalIncome();
+                        _calculateBalance();
+                      });
+                      _saveIncomes();
+                    }
+                  });
+                },
+              ),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFinancialSummary() {
+    return GestureDetector(
+      onTap: () {
+        setState(() {
+          _showDetails = !_showDetails;
+        });
+      },
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFF7828),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: Column(
+          children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Balance',
+                  style: TextStyle(
+                      fontSize: 18,
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      _balance >= 0
+                          ? '${_balance.toStringAsFixed(2)}₺'
+                          : '-${_balance.abs().toStringAsFixed(2)}₺',
+                      style: const TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white),
+                    ),
+                    const SizedBox(width: 10),
+                    Icon(
+                      _showDetails
+                          ? Icons.arrow_drop_up
+                          : Icons.arrow_drop_down,
+                      color: Colors.white,
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            if (_showDetails) ...[
+              const Divider(color: Colors.white, thickness: 1, height: 20),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Income',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                    Text(
+                      '${_totalIncome.toStringAsFixed(2)}₺',
+                      style: const TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.symmetric(vertical: 5),
+                child: Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    const Text(
+                      'Total Expenses',
+                      style: TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                    Text(
+                      '${_totalExpenses.toStringAsFixed(2)}₺',
+                      style: const TextStyle(fontSize: 16, color: Colors.white),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ],
         ),
       ),
     );
@@ -186,7 +391,7 @@ class _HomeScreenState extends State<HomeScreen> {
           children: <Widget>[
             DrawerHeader(
               decoration: const BoxDecoration(
-                color: Color(0xFFFF914D),
+                color: Color(0xFFFF7828),
               ),
               child: Image.asset(
                 'assets/images/kasa_menu.png',
@@ -203,6 +408,30 @@ class _HomeScreenState extends State<HomeScreen> {
                   context,
                   MaterialPageRoute(
                       builder: (context) => const MonthlyExpensesScreen()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.add_alarm_outlined),
+              title: const Text('Future Expenses'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const FutureExpenses()),
+                );
+              },
+            ),
+            ListTile(
+              leading: const Icon(Icons.track_changes_outlined),
+              title: const Text('Expenses Target'),
+              onTap: () {
+                Navigator.pop(context);
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (context) => const ExpensesTarget()),
                 );
               },
             ),
@@ -239,91 +468,77 @@ class _HomeScreenState extends State<HomeScreen> {
           ],
         ),
       ),
-      body: Column(
-        children: [
-          const SizedBox(height: 16),
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.amber[900],
-            child: Padding(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 25.0, vertical: 5),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  const Text(
-                    'Total Expenses',
-                    style: TextStyle(
-                        fontSize: 18,
-                        color: Colors.white,
-                        fontWeight: FontWeight.bold),
+      body: SingleChildScrollView(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              _buildFinancialSummary(),
+              const SizedBox(height: 20),
+              _buildPieChart(),
+              const SizedBox(height: 20),
+              if (_expenses.isEmpty)
+                Center(
+                  child: Column(
+                    children: [
+                      const SizedBox(height: 45),
+                      const Icon(Icons.receipt_long,
+                          size: 64, color: Colors.grey),
+                      const SizedBox(height: 16),
+                      Text(
+                        'No expenses added yet',
+                        style: TextStyle(fontSize: 18, color: Colors.grey[600]),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Tap the + button to add an expense',
+                        style: TextStyle(fontSize: 14, color: Colors.grey[500]),
+                      ),
+                    ],
                   ),
-                  Text(
-                    '${_totalExpenses.toStringAsFixed(2)}₺',
-                    style: const TextStyle(
-                        fontSize: 18,
-                        fontWeight: FontWeight.bold,
-                        color: Colors.white),
-                  ),
-                ],
-              ),
-            ),
+                )
+              else
+                ListView.builder(
+                  shrinkWrap: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  itemCount: _expenses.length,
+                  itemBuilder: (BuildContext context, int index) {
+                    final expense = _expenses[index];
+                    return Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 8.0),
+                      child: ExpenseCard(
+                        category: expense['category'],
+                        title: expense['title'],
+                        amount: expense['amount'],
+                        date: DateTime.parse(expense['date']),
+                        photo: expense['photo'] != null
+                            ? File(expense['photo'])
+                            : null,
+                        onEdit: () {
+                          // Implement edit functionality
+                        },
+                        onDelete: () {
+                          setState(() {
+                            _expenses.removeAt(index);
+                            _calculateTotalExpenses();
+                            _calculateBalance();
+                          });
+                          _saveExpenses();
+                        },
+                      ),
+                    );
+                  },
+                ),
+            ],
           ),
-          const SizedBox(height: 20),
-          _buildPieChart(),
-          const SizedBox(height: 20),
-          Expanded(
-            child: ListView.builder(
-              itemCount: _expenses.length,
-              itemBuilder: (BuildContext context, int index) {
-                final expense = _expenses[index];
-                return Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: ExpenseCard(
-                    category: expense['category'],
-                    title: expense['title'],
-                    amount: expense['amount'],
-                    date: DateTime.parse(expense['date']),
-                    photo: expense['photo'] != null
-                        ? File(expense['photo'])
-                        : null,
-                    onEdit: () {
-                      // Implement edit functionality
-                      // For example, navigate to ExpenseScreen with current expense data
-                    },
-                    onDelete: () {
-                      setState(() {
-                        _expenses.removeAt(index);
-                        _calculateTotalExpenses();
-                      });
-                      _saveExpenses();
-                    },
-                  ),
-                );
-              },
-            ),
-          ),
-        ],
+        ),
       ),
       floatingActionButton: Padding(
         padding: const EdgeInsets.all(25.0),
         child: FloatingActionButton(
-          backgroundColor: Colors.amber[900],
+          backgroundColor: const Color(0xFFFF7828),
           onPressed: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => const ExpenseScreen(),
-              ),
-            ).then((result) {
-              if (result != null) {
-                setState(() {
-                  _expenses.add(result);
-                  _calculateTotalExpenses();
-                });
-                _saveExpenses();
-              }
-            });
+            _showAddOptionsModal(context);
           },
           child: const Icon(
             Icons.add,

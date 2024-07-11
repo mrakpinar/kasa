@@ -1,5 +1,4 @@
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 
 class ExpenseCard extends StatelessWidget {
@@ -25,59 +24,106 @@ class ExpenseCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Card(
-      color: Colors.grey[100],
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(15),
+      ),
+      color: Colors.white,
+      elevation: 3,
       child: InkWell(
         onTap: () {
-          showDialog(
+          showModalBottomSheet(
             context: context,
+            isScrollControlled: true,
+            shape: const RoundedRectangleBorder(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(25)),
+            ),
             builder: (BuildContext context) {
-              return AlertDialog(
-                title: Text(title ?? 'Expense Details'),
-                content: Column(
+              return Padding(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
                   mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Category: $category'),
+                    Center(
+                      child: Container(
+                        width: 40,
+                        height: 5,
+                        decoration: BoxDecoration(
+                          color: Colors.grey[300],
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      title ?? 'Expense Details',
+                      style: const TextStyle(
+                          fontWeight: FontWeight.bold, fontSize: 22),
+                    ),
+                    const SizedBox(height: 16),
+                    Text(
+                      'Category: $category',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text('Amount:'),
+                        const Text('Amount:', style: TextStyle(fontSize: 18)),
+                        const SizedBox(width: 5),
                         Text('${amount.toStringAsFixed(2)}₺',
                             style: const TextStyle(
-                                color: Colors.red, fontWeight: FontWeight.bold))
+                                color: Colors.red,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 18))
                       ],
                     ),
-                    Text('Date: ${_formatDate(date)}'),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Date: ${_formatDate(date)}',
+                      style: const TextStyle(fontSize: 18),
+                    ),
+                    const SizedBox(height: 16),
                     if (photo != null && File(photo!.path).existsSync())
-                      GestureDetector(
-                        onTap: () {
-                          Navigator.of(context).pop(); // Mevcut dialog'u kapat
-                          _showFullScreenImage(
-                              context); // Tam ekran fotoğrafı göster
-                        },
-                        child: Image.file(File(photo!.path), height: 100),
+                      Center(
+                        child: GestureDetector(
+                          onTap: () {
+                            Navigator.of(context)
+                                .pop(); // Mevcut dialog'u kapat
+                            _showFullScreenImage(
+                                context); // Tam ekran fotoğrafı göster
+                          },
+                          child: ClipRRect(
+                            borderRadius: BorderRadius.circular(10),
+                            child: Image.file(File(photo!.path), height: 200),
+                          ),
+                        ),
                       ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceAround,
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.edit, color: Colors.blue),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            if (onEdit != null) onEdit!();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.delete, color: Colors.red),
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                            if (onDelete != null) onDelete!();
+                          },
+                        ),
+                        IconButton(
+                          icon: const Icon(Icons.close, color: Colors.grey),
+                          onPressed: () => Navigator.of(context).pop(),
+                        ),
+                      ],
+                    ),
                   ],
                 ),
-                actions: [
-                  TextButton(
-                    child: const Text('Edit'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      if (onEdit != null) onEdit!();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('Delete'),
-                    onPressed: () {
-                      Navigator.of(context).pop();
-                      if (onDelete != null) onDelete!();
-                    },
-                  ),
-                  TextButton(
-                    child: const Text('Close'),
-                    onPressed: () => Navigator.of(context).pop(),
-                  ),
-                ],
               );
             },
           );
@@ -100,8 +146,7 @@ class ExpenseCard extends StatelessWidget {
                       color: Colors.red, fontWeight: FontWeight.bold))
             ],
           ),
-          // ignore: unnecessary_string_interpolations
-          trailing: Text('${_formatDate(date)}'),
+          trailing: Text(_formatDate(date)),
         ),
       ),
     );
