@@ -87,10 +87,8 @@ class ExpenseCard extends StatelessWidget {
                       Center(
                         child: GestureDetector(
                           onTap: () {
-                            Navigator.of(context)
-                                .pop(); // Mevcut dialog'u kapat
-                            _showFullScreenImage(
-                                context); // Tam ekran fotoğrafı göster
+                            // Navigator.of(context).pop();
+                            _showFullScreenImage(context);
                           },
                           child: ClipRRect(
                             borderRadius: BorderRadius.circular(10),

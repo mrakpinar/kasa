@@ -47,6 +47,16 @@ class _ExpenseScreenState extends State<ExpenseScreen> {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
+      if (_date == null || _category == null || _amount == null) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Please fill all required fields'),
+            backgroundColor: Colors.red,
+          ),
+        );
+        return;
+      }
+
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
       // Get current expenses list

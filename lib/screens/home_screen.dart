@@ -3,6 +3,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:kasa/components/expense_card.dart';
+import 'package:kasa/screens/edit_expenses_screen.dart';
 import 'package:kasa/screens/expense_screen.dart';
 import 'package:kasa/screens/expenses_target.dart';
 import 'package:kasa/screens/future_expenses.dart';
@@ -411,6 +412,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+            const Divider(
+              color: Colors.black,
+              thickness: 0.5,
+            ),
             ListTile(
               leading: const Icon(Icons.add_alarm_outlined),
               title: const Text('Future Expenses'),
@@ -423,6 +428,10 @@ class _HomeScreenState extends State<HomeScreen> {
                 );
               },
             ),
+            const Divider(
+              color: Colors.black,
+              thickness: 0.5,
+            ),
             ListTile(
               leading: const Icon(Icons.track_changes_outlined),
               title: const Text('Expenses Target'),
@@ -434,6 +443,10 @@ class _HomeScreenState extends State<HomeScreen> {
                       builder: (context) => const ExpensesTarget()),
                 );
               },
+            ),
+            const Divider(
+              color: Colors.black,
+              thickness: 0.5,
             ),
             ListTile(
               leading: const Icon(Icons.delete_sweep),
@@ -464,6 +477,10 @@ class _HomeScreenState extends State<HomeScreen> {
                   },
                 );
               },
+            ),
+            const Divider(
+              color: Colors.black,
+              thickness: 0.5,
             ),
           ],
         ),
@@ -515,7 +532,12 @@ class _HomeScreenState extends State<HomeScreen> {
                             ? File(expense['photo'])
                             : null,
                         onEdit: () {
-                          // Implement edit functionality
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const EditExpensesScreen(),
+                            ),
+                          );
                         },
                         onDelete: () {
                           setState(() {
