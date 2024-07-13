@@ -6,14 +6,15 @@ import 'package:kasa/components/expense_card.dart';
 import 'package:kasa/screens/edit_expenses_screen.dart';
 import 'package:kasa/screens/expense_screen.dart';
 import 'package:kasa/screens/expenses_target.dart';
-import 'package:kasa/screens/future_expenses.dart';
 import 'package:kasa/screens/income_screen.dart';
-import 'package:kasa/screens/monthly_expenses_screen.dart';
+import 'package:kasa/screens/monthly_finance_screen.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:fl_chart/fl_chart.dart';
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  final ValueNotifier<ThemeMode> themeMode;
+
+  const HomeScreen({super.key, required this.themeMode});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -23,6 +24,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   List<Map<String, dynamic>> _expenses = [];
   List<Map<String, dynamic>> _incomes = [];
+  List<Map<String, dynamic>> _futureExpenses = [];
   double _totalExpenses = 0.0;
   double _totalIncome = 0.0;
   double _balance = 0.0;
@@ -39,22 +41,9 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   void initState() {
     super.initState();
-    _loadExpenses().then((_) {
-      setState(() {
-        _expenses = _expenses.reversed.toList();
-      });
-    });
+    _loadExpenses();
     _loadIncomes();
-  }
-
-  Map<String, double> _calculateCategoryExpenses() {
-    Map<String, double> categoryExpenses = {};
-    for (var expense in _expenses) {
-      String category = expense['category'];
-      double amount = expense['amount'];
-      categoryExpenses[category] = (categoryExpenses[category] ?? 0) + amount;
-    }
-    return categoryExpenses;
+    _loadFutureExpenses();
   }
 
   Future<void> _loadExpenses() async {
@@ -62,6 +51,7 @@ class _HomeScreenState extends State<HomeScreen> {
     final String expensesJson = prefs.getString('expenses') ?? '[]';
     setState(() {
       _expenses = List<Map<String, dynamic>>.from(jsonDecode(expensesJson));
+      _expenses = _expenses.reversed.toList();
       _calculateTotalExpenses();
       _calculateBalance();
     });
@@ -74,6 +64,17 @@ class _HomeScreenState extends State<HomeScreen> {
       _incomes = List<Map<String, dynamic>>.from(jsonDecode(incomesJson));
       _calculateTotalIncome();
       _calculateBalance();
+    });
+  }
+
+  Future<void> _loadFutureExpenses() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    final String futureExpensesJson = prefs.getString('futureExpenses') ?? '[]';
+    setState(() {
+      _futureExpenses =
+          List<Map<String, dynamic>>.from(jsonDecode(futureExpensesJson));
+      _futureExpenses.sort((a, b) =>
+          DateTime.parse(a['date']).compareTo(DateTime.parse(b['date'])));
     });
   }
 
@@ -111,6 +112,27 @@ class _HomeScreenState extends State<HomeScreen> {
       _totalExpenses = 0.0;
       _calculateBalance();
     });
+  }
+
+  Future<void> _clearIncomes() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    await prefs.remove('incomes');
+    setState(() {
+      // You may update any UI components here as needed
+      _incomes.clear();
+      _totalIncome = 0.0;
+      _calculateBalance();
+    });
+  }
+
+  Map<String, double> _calculateCategoryExpenses() {
+    Map<String, double> categoryExpenses = {};
+    for (var expense in _expenses) {
+      String category = expense['category'];
+      double amount = expense['amount'];
+      categoryExpenses[category] = (categoryExpenses[category] ?? 0) + amount;
+    }
+    return categoryExpenses;
   }
 
   void _showCategoryExpensesModal(
@@ -160,7 +182,6 @@ class _HomeScreenState extends State<HomeScreen> {
     List<PieChartSectionData> sections = [];
 
     if (categoryExpenses.isEmpty) {
-      // Hiç harcama yoksa, tek bir gri bölüm göster
       sections.add(
         PieChartSectionData(
           color: Colors.grey[300],
@@ -193,7 +214,9 @@ class _HomeScreenState extends State<HomeScreen> {
     }
 
     return Card(
-      color: Colors.grey[100],
+      color: widget.themeMode.value == ThemeMode.dark
+          ? Colors.grey[800] // Dark theme app bar color
+          : Colors.white, // Light theme app bar color
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: GestureDetector(
@@ -269,6 +292,28 @@ class _HomeScreenState extends State<HomeScreen> {
                   });
                 },
               ),
+              // ListTile(
+              //   leading: const Icon(Icons.calendar_today),
+              //   title: const Text('Add Future Expense'),
+              //   onTap: () {
+              //     Navigator.pop(context);
+              //     Navigator.push(
+              //       context,
+              //       MaterialPageRoute(
+              //         builder: (context) => const FutureExpenses(),
+              //       ),
+              //     ).then((result) {
+              //       if (result != null) {
+              //         setState(() {
+              //           _futureExpenses.add(result);
+              //           _futureExpenses.sort((a, b) => DateTime.parse(a['date'])
+              //               .compareTo(DateTime.parse(b['date'])));
+              //         });
+              //         _loadFutureExpenses();
+              //       }
+              //     });
+              //   },
+              // ),
             ],
           ),
         );
@@ -286,7 +331,9 @@ class _HomeScreenState extends State<HomeScreen> {
       child: Container(
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: const Color(0xFFFF7828),
+          color: widget.themeMode.value == ThemeMode.light
+              ? const Color(0xFFFF7828)
+              : Colors.grey[800],
           borderRadius: BorderRadius.circular(10),
         ),
         child: Column(
@@ -351,7 +398,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       style: TextStyle(fontSize: 16, color: Colors.white),
                     ),
                     Text(
-                      '${_totalExpenses.toStringAsFixed(2)}₺',
+                      '-${_totalExpenses.toStringAsFixed(2)}₺',
                       style: const TextStyle(fontSize: 16, color: Colors.white),
                     ),
                   ],
@@ -364,123 +411,246 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // Widget _buildFutureExpensesList() {
+  //   return Column(
+  //     crossAxisAlignment: CrossAxisAlignment.start,
+  //     children: [
+  //       const Padding(
+  //         padding: EdgeInsets.symmetric(vertical: 8.0),
+  //         child: Text(
+  //           'Upcoming Expenses',
+  //           style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+  //         ),
+  //       ),
+  //       if (_futureExpenses.isEmpty)
+  //         const Padding(
+  //           padding: EdgeInsets.all(8.0),
+  //           child: Text('No upcoming expenses'),
+  //         )
+  //       else
+  //         ListView.builder(
+  //           shrinkWrap: true,
+  //           physics: const NeverScrollableScrollPhysics(),
+  //           itemCount: _futureExpenses.length,
+  //           itemBuilder: (BuildContext context, int index) {
+  //             final expense = _futureExpenses[index];
+  //             return ListTile(
+  //               title: Text(expense['title']),
+  //               subtitle: Text(expense['category']),
+  //               trailing: Text(
+  //                 '${expense['amount'].toStringAsFixed(2)}₺\n${DateTime.parse(expense['date']).toString().split(' ')[0]}',
+  //                 textAlign: TextAlign.end,
+  //               ),
+  //             );
+  //           },
+  //         ),
+  //     ],
+  //   );
+  // }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        backgroundColor: Colors.white,
+        backgroundColor: widget.themeMode.value == ThemeMode.dark
+            ? const Color(0xFFFF7828) // Dark theme app bar color
+            : Colors.white, // Light theme app bar color
         title: Image.asset(
-          'assets/images/kasa2.png',
-          height: 250,
+          widget.themeMode.value == ThemeMode.dark
+              ? 'assets/images/kasa3.png'
+              : 'assets/images/kasa2.png',
+          height: widget.themeMode.value == ThemeMode.dark ? 200 : 250,
           fit: BoxFit.contain,
         ),
         centerTitle: true,
         leading: Builder(
           builder: (BuildContext context) {
             return IconButton(
-              icon: const Icon(Icons.menu),
+              icon: const Icon(
+                Icons.menu_rounded,
+                size: 30,
+              ),
               onPressed: () {
                 Scaffold.of(context).openDrawer();
               },
             );
           },
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.brightness_6), // Theme toggle icon
+            onPressed: () {
+              // Toggle theme logic
+              if (widget.themeMode.value == ThemeMode.light) {
+                widget.themeMode.value = ThemeMode.dark;
+              } else {
+                widget.themeMode.value = ThemeMode.light;
+              }
+            },
+          ),
+        ],
       ),
       drawer: Drawer(
-        child: ListView(
-          padding: EdgeInsets.zero,
+        child: Column(
           children: <Widget>[
-            DrawerHeader(
-              decoration: const BoxDecoration(
-                color: Color(0xFFFF7828),
-              ),
-              child: Image.asset(
-                'assets/images/kasa_menu.png',
-                height: 250,
-                fit: BoxFit.fitWidth,
-              ),
-            ),
-            ListTile(
-              leading: const Icon(Icons.calendar_today),
-              title: const Text('Monthly Expenses'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const MonthlyExpensesScreen()),
-                );
-              },
-            ),
-            const Divider(
-              color: Colors.black,
-              thickness: 0.5,
-            ),
-            ListTile(
-              leading: const Icon(Icons.add_alarm_outlined),
-              title: const Text('Future Expenses'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const FutureExpenses()),
-                );
-              },
-            ),
-            const Divider(
-              color: Colors.black,
-              thickness: 0.5,
-            ),
-            ListTile(
-              leading: const Icon(Icons.track_changes_outlined),
-              title: const Text('Expenses Target'),
-              onTap: () {
-                Navigator.pop(context);
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                      builder: (context) => const ExpensesTarget()),
-                );
-              },
-            ),
-            const Divider(
-              color: Colors.black,
-              thickness: 0.5,
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete_sweep),
-              title: const Text('Clear All Expenses'),
-              onTap: () {
-                Navigator.pop(context);
-                showDialog(
-                  context: context,
-                  builder: (BuildContext context) {
-                    return AlertDialog(
-                      title: const Text('Clear All Expenses'),
-                      content: const Text(
-                          'Are you sure you want to delete all expenses?'),
-                      actions: [
-                        TextButton(
-                          child: const Text('Cancel'),
-                          onPressed: () => Navigator.of(context).pop(),
+            Expanded(
+              child: ListView(
+                padding: EdgeInsets.zero,
+                children: <Widget>[
+                  DrawerHeader(
+                    decoration: const BoxDecoration(
+                      color: Color(0xFFFF7828),
+                    ),
+                    child: Image.asset(
+                      'assets/images/kasa_menu.png',
+                      height: 250,
+                      fit: BoxFit.fitWidth,
+                    ),
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.calendar_today),
+                    title: const Text('Monthly Finance'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const MonthlyFinancesScreen(),
                         ),
-                        TextButton(
-                          child: const Text('Clear'),
-                          onPressed: () {
-                            _clearExpenses();
-                            Navigator.of(context).pop();
-                          },
+                      );
+                    },
+                  ),
+                  Divider(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                    thickness: 0.5,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.track_changes_outlined),
+                    title: const Text('Expenses Target'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => const ExpensesTarget(),
                         ),
-                      ],
-                    );
-                  },
-                );
-              },
+                      );
+                    },
+                  ),
+                  Divider(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                    thickness: 0.5,
+                  ),
+                  ListTile(
+                    leading: const Icon(Icons.delete_sweep),
+                    title: const Text('Clear Data'),
+                    onTap: () {
+                      Navigator.pop(context);
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('Clear Data'),
+                            content: const Text(
+                              'What do you want to clear?',
+                            ),
+                            actions: [
+                              TextButton(
+                                child: const Text('Expenses'),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text('Clear Expenses'),
+                                        content: const Text(
+                                          'Are you sure you want to delete all expenses?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text('Cancel'),
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                          ),
+                                          TextButton(
+                                            child: const Text('Clear'),
+                                            onPressed: () {
+                                              _clearExpenses();
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('Incomes'),
+                                onPressed: () {
+                                  showDialog(
+                                    context: context,
+                                    builder: (BuildContext context) {
+                                      return AlertDialog(
+                                        title: const Text('Clear Incomes'),
+                                        content: const Text(
+                                          'Are you sure you want to delete all incomes?',
+                                        ),
+                                        actions: [
+                                          TextButton(
+                                            child: const Text('Cancel'),
+                                            onPressed: () =>
+                                                Navigator.of(context).pop(),
+                                          ),
+                                          TextButton(
+                                            child: const Text('Clear'),
+                                            onPressed: () {
+                                              _clearIncomes();
+                                              Navigator.of(context).pop();
+                                            },
+                                          ),
+                                        ],
+                                      );
+                                    },
+                                  );
+                                },
+                              ),
+                              TextButton(
+                                child: const Text('Cancel'),
+                                onPressed: () => Navigator.of(context).pop(),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
+                  ),
+                  Divider(
+                    color: Theme.of(context).brightness == Brightness.dark
+                        ? Colors.white
+                        : Colors.black,
+                    thickness: 0.5,
+                  ),
+                ],
+              ),
             ),
-            const Divider(
-              color: Colors.black,
-              thickness: 0.5,
+            ListTile(
+              title: const Text('Switch Theme'),
+              trailing: Switch(
+                value: widget.themeMode.value == ThemeMode.dark,
+                onChanged: (value) {
+                  widget.themeMode.value =
+                      value ? ThemeMode.dark : ThemeMode.light;
+                  // Navigator.pop(context); // Optional: Close drawer after theme change
+                },
+                activeColor: Colors.orange,
+                inactiveThumbColor: Colors.blueGrey[900],
+                inactiveTrackColor: Colors.grey[300],
+              ),
             ),
           ],
         ),
@@ -535,9 +705,17 @@ class _HomeScreenState extends State<HomeScreen> {
                           Navigator.push(
                             context,
                             MaterialPageRoute(
-                              builder: (context) => const EditExpensesScreen(),
+                              builder: (context) => EditExpensesScreen(
+                                expense: expense, // Mevcut harcama verisi
+                                index: index, // Harcamanın listedeki indeksi
+                              ),
                             ),
-                          );
+                          ).then((value) {
+                            if (value == true) {
+                              // Harcama güncellendi, listeyi yenile
+                              _loadExpenses();
+                            }
+                          });
                         },
                         onDelete: () {
                           setState(() {

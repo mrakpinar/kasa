@@ -1,3 +1,5 @@
+// ignore_for_file: use_build_context_synchronously
+
 import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
@@ -37,22 +39,23 @@ class _FutureExpensesState extends State<FutureExpenses> {
         _imageFile = File(pickedFile.path);
         _imageSelected = true;
       } else {
+        // ignore: avoid_print
         print('No image selected.');
       }
     });
   }
 
-  Future<void> _saveExpense() async {
+  Future<void> _saveFutureExpense() async {
     if (_formKey.currentState!.validate()) {
       _formKey.currentState!.save();
 
       final SharedPreferences prefs = await SharedPreferences.getInstance();
 
-      // Get current expenses list
-      String expensesJson = prefs.getString('expenses') ?? '[]';
-      List<dynamic> expenseList = jsonDecode(expensesJson);
+      // Get current future expenses list
+      String futureExpensesJson = prefs.getString('futureExpenses') ?? '[]';
+      List<dynamic> futureExpenseList = jsonDecode(futureExpensesJson);
 
-      final Map<String, dynamic> newExpense = {
+      final Map<String, dynamic> newFutureExpense = {
         'category': _category,
         'title': _title,
         'amount': _amount,
@@ -60,38 +63,22 @@ class _FutureExpensesState extends State<FutureExpenses> {
         'photo': _imageFile?.path,
       };
 
-      // Add new expenses to list
-      expenseList.add(newExpense);
+      // Add new future expense to list
+      futureExpenseList.add(newFutureExpense);
 
       // Save list as a JSON
-      await prefs.setString('expenses', jsonEncode(expenseList));
+      await prefs.setString('futureExpenses', jsonEncode(futureExpenseList));
 
-      // Update expenses limit
-      double targetAmount = prefs.getDouble('targetAmount') ?? 0;
-      targetAmount -= _amount!;
-      await prefs.setDouble('targetAmount', targetAmount);
+      // // Schedule notification
+      // await NotificationsService.scheduleNotification(
+      //   id: futureExpenseList.length - 1,
+      //   title: 'Expense Reminder',
+      //   body: 'You have a scheduled expense: $_title',
+      //   scheduledDate: _date!,
+      // );
 
-      // Send notification
-      if (targetAmount <= 0) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Your target amount is exceeded!'),
-            backgroundColor: Colors.red,
-          ),
-        );
-      } else if (targetAmount <= 50) {
-        // ignore: use_build_context_synchronously
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('You are close to reaching your target amount!'),
-            backgroundColor: Colors.orange,
-          ),
-        );
-      }
-
-      // ignore: use_build_context_synchronously
-      Navigator.pop(context, newExpense);
+      // Return to previous screen
+      Navigator.pop(context, newFutureExpense);
     }
   }
 
@@ -105,8 +92,7 @@ class _FutureExpensesState extends State<FutureExpenses> {
         padding: const EdgeInsets.all(16.0),
         child: Form(
           key: _formKey,
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+          child: ListView(
             children: [
               DropdownButtonFormField<String>(
                 value: _category,
@@ -137,12 +123,18 @@ class _FutureExpensesState extends State<FutureExpenses> {
               const SizedBox(height: 16),
               TextFormField(
                 decoration: InputDecoration(
-                  labelText: 'Title (Optional)',
+                  labelText: 'Title',
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
                 onSaved: (value) => _title = value,
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please enter a title';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               TextFormField(
@@ -173,7 +165,7 @@ class _FutureExpensesState extends State<FutureExpenses> {
                   final DateTime? picked = await showDatePicker(
                     context: context,
                     initialDate: DateTime.now(),
-                    firstDate: DateTime(2000),
+                    firstDate: DateTime.now(),
                     lastDate: DateTime(2101),
                   );
                   if (picked != null) {
@@ -186,6 +178,12 @@ class _FutureExpensesState extends State<FutureExpenses> {
                 controller: TextEditingController(
                   text: _date == null ? '' : _date!.toString().split(' ')[0],
                 ),
+                validator: (value) {
+                  if (value == null || value.isEmpty) {
+                    return 'Please select a date';
+                  }
+                  return null;
+                },
               ),
               const SizedBox(height: 16),
               ElevatedButton.icon(
@@ -233,14 +231,14 @@ class _FutureExpensesState extends State<FutureExpenses> {
                 ),
               const SizedBox(height: 20),
               ElevatedButton(
-                onPressed: _saveExpense,
+                onPressed: _saveFutureExpense,
                 style: ElevatedButton.styleFrom(
                   padding: const EdgeInsets.symmetric(vertical: 16.0),
                   shape: RoundedRectangleBorder(
                     borderRadius: BorderRadius.circular(12.0),
                   ),
                 ),
-                child: const Text('Save Expense'),
+                child: const Text('Save Future Expense'),
               ),
             ],
           ),

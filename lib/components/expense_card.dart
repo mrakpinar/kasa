@@ -23,11 +23,18 @@ class ExpenseCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final ThemeData theme = Theme.of(context);
+    final bool isDarkTheme = theme.brightness == Brightness.dark;
+
+    Color cardColor = isDarkTheme ? Colors.grey[800]! : Colors.white;
+    Color textColor = isDarkTheme ? Colors.white : Colors.black;
+    Color amountColor = Colors.red;
+
     return Card(
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(15),
       ),
-      color: Colors.white,
+      color: cardColor,
       elevation: 3,
       child: InkWell(
         onTap: () {
@@ -57,37 +64,41 @@ class ExpenseCard extends StatelessWidget {
                     const SizedBox(height: 16),
                     Text(
                       title ?? 'Expense Details',
-                      style: const TextStyle(
-                          fontWeight: FontWeight.bold, fontSize: 22),
+                      style: TextStyle(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 22,
+                        color: textColor,
+                      ),
                     ),
                     const SizedBox(height: 16),
                     Text(
                       'Category: $category',
-                      style: const TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18, color: textColor),
                     ),
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        const Text('Amount:', style: TextStyle(fontSize: 18)),
+                        Text('Amount:',
+                            style: TextStyle(fontSize: 18, color: textColor)),
                         const SizedBox(width: 5),
                         Text('${amount.toStringAsFixed(2)}₺',
-                            style: const TextStyle(
-                                color: Colors.red,
-                                fontWeight: FontWeight.bold,
-                                fontSize: 18))
+                            style: TextStyle(
+                              color: amountColor,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 18,
+                            )),
                       ],
                     ),
                     const SizedBox(height: 8),
                     Text(
                       'Date: ${_formatDate(date)}',
-                      style: const TextStyle(fontSize: 18),
+                      style: TextStyle(fontSize: 18, color: textColor),
                     ),
                     const SizedBox(height: 16),
                     if (photo != null && File(photo!.path).existsSync())
                       Center(
                         child: GestureDetector(
                           onTap: () {
-                            // Navigator.of(context).pop();
                             _showFullScreenImage(context);
                           },
                           child: ClipRRect(
@@ -132,19 +143,18 @@ class ExpenseCard extends StatelessWidget {
               : const CircleAvatar(child: Icon(Icons.receipt)),
           title: Text(
             title ?? '',
-            style: const TextStyle(fontSize: 19, fontWeight: FontWeight.bold),
+            style: TextStyle(
+                fontSize: 19, fontWeight: FontWeight.bold, color: textColor),
           ),
           subtitle: Row(
             children: [
-              Text(
-                '$category - ',
-              ),
+              Text('$category - ', style: TextStyle(color: textColor)),
               Text('${amount.toStringAsFixed(2)}₺',
-                  style: const TextStyle(
-                      color: Colors.red, fontWeight: FontWeight.bold))
+                  style: TextStyle(
+                      color: amountColor, fontWeight: FontWeight.bold)),
             ],
           ),
-          trailing: Text(_formatDate(date)),
+          trailing: Text(_formatDate(date), style: TextStyle(color: textColor)),
         ),
       ),
     );
