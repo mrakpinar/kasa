@@ -1,6 +1,6 @@
 # kasa
 
-A new Flutter project.
+An app for calculate budget.
 
 ## Getting Started
 
