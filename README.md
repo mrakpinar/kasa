@@ -1,4 +1,5 @@
-![Logo]([https://dev-to-uploads.s3.amazonaws.com/uploads/articles/th5xamgrr6se0x5ro4g6.png](https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721403523/kasa_icon_txn7in.png))
+
+![Logo](https://i.ibb.co/k2pvDFw/kasa-icon.png)
 # kasa
 An app for calculate budget.
 
