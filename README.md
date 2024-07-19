@@ -50,6 +50,7 @@ flutter run
   <div class="image-row">
   <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416170/kasa%20ss/home_screen_light2_tt5jdb.jpg" alt="Home Screen" width="300">
   <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416171/kasa%20ss/home_screen_dark_km64kl.jpg" alt="Home Screen (dark mode)" width="300">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721417200/home_screen_menu_uuybt0.jpg" alt="Home Screen (dark mode)" width="300">
   </div>
 
 
