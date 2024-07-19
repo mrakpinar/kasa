@@ -6,7 +6,7 @@
 </head>
 <body>
   <div style="text-align: center;">
-    <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721417672/MindfulMeditators_ui8a0k.png" alt="Kasa Icon"  height="300">
+    <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/t_aa/v1721417672/MindfulMeditators_ui8a0k.png" alt="Kasa Icon"  width="100%" height=auto>
     <h1>Kasa</h1>
   </div>
 
