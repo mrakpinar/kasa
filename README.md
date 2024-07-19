@@ -75,6 +75,7 @@ flutter run
     <li><a href="https://pub.dev/packages/intl">intl</a></li>
     <li><a href="https://pub.dev/packages/shared_preferences">shared_preferences</a></li>
     <li><a href="https://pub.dev/packages/image_picker">image_picker</a></li>
+    <li><a href="https://pub.dev/packages/fl_charts">image_picker</a></li>
   </ul>
 
   <h2>Contributing</h2>
