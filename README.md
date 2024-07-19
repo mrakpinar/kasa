@@ -47,19 +47,26 @@ flutter run
 
   <h3>Home Screen</h3>
   <p>On the home screen, you can see all added incomes and expenses displayed as cards. Tap the add button to add a new expense or income.</p>
-  <img src="path_to_home_screen_image" alt="Home Screen" width="300">
+  <div class="image-row">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416170/kasa%20ss/home_screen_light2_tt5jdb.jpg" alt="Home Screen" width="300">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416171/kasa%20ss/home_screen_dark_km64kl.jpg" alt="Home Screen (dark mode)" width="300">
+  </div>
+
 
   <h3>Expense Screen</h3>
   <p>In the expense screen, you can add a new expense or edit existing ones. You can enter the expense category, title, amount, date, and optionally attach a photo.</p>
-  <img src="path_to_expense_screen_image" alt="Expense Screen" width="300">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416170/kasa%20ss/add_expenses_psovis.jpg" alt="Expense Screen" width="300">
 
   <h3>Income Screen</h3>
   <p>Record your incomes in this screen, or edit existing income records. Enter the income source, amount, and date.</p>
-  <img src="path_to_income_screen_image" alt="Income Screen" width="300">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416170/kasa%20ss/add_incomes_yikisf.jpg" alt="Income Screen" width="300">
 
   <h3>Monthly Finances Screen</h3>
   <p>View your monthly finances in this screen, separated into expenses and incomes. Tap on a month to see detailed breakdowns.</p>
-  <img src="path_to_monthly_finances_screen_image" alt="Monthly Finances Screen" width="300">
+  <div class="image-row>
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416584/montly_finance_expenses_to76ng.jpg" alt="Monthly Finances Screen" width="300">
+  <img src="https://res.cloudinary.com/dh7lpyg7t/image/upload/v1721416171/kasa%20ss/montly_finance_incomes_ulpanx.jpg" alt="Monthly Finances Screen" width="300">
+  </div>
 
   <h2>Dependencies</h2>
   <ul>
